@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cartly - End-to-end test</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; height: 100vh; overflow: hidden;
+    font: 15px/1.4 "Segoe UI", system-ui, sans-serif;
+    background: #0f172a; color: #e2e8f0;
+    display: flex; flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; gap: 16px;
+    padding: 14px 24px; background: #111827; border-bottom: 1px solid #1f2937;
+  }
+  header h1 { margin: 0; font-size: 20px; color: #4ade80; }
+  header .sub { color: #94a3b8; font-size: 14px; }
+  header .step { margin-left: auto; color: #94a3b8; font-variant-numeric: tabular-nums; }
+  .progress { height: 4px; background: #1f2937; }
+  .progress > div { height: 100%; width: 0; background: #4ade80; transition: width .4s; }
+  .caption { padding: 16px 24px 8px; }
+  .caption h2 { margin: 0 0 4px; font-size: 24px; }
+  .caption p { margin: 0; color: #cbd5e1; font-size: 16px; min-height: 44px; }
+  main { flex: 1; display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; padding: 8px 24px 20px; min-height: 0; }
+  .panel { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 12px 14px; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+  .panel h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+  .right { display: grid; grid-template-rows: auto auto 1fr; gap: 16px; min-height: 0; }
+  .lists { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  #log { display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+  .entry { background: #0b1220; border: 1px solid #1e293b; border-radius: 8px; padding: 8px 10px; animation: in .25s ease-out; }
+  .entry .line { display: flex; gap: 8px; align-items: center; font-family: Consolas, monospace; font-size: 14px; }
+  .method { font-weight: 700; color: #60a5fa; min-width: 58px; }
+  .path { color: #e2e8f0; }
+  .status { margin-left: auto; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+  .s2 { background: #14532d; color: #86efac; }
+  .s4 { background: #7c2d12; color: #fdba74; }
+  .s5 { background: #7f1d1d; color: #fca5a5; }
+  .meta { font-family: Consolas, monospace; font-size: 12.5px; color: #94a3b8; margin-top: 4px; white-space: pre-wrap; word-break: break-all; }
+  .meta .hdr { color: #c4b5fd; }
+  .meta .nohdr { color: #f87171; }
+  ul.items { list-style: none; margin: 0; padding: 0; }
+  ul.items li { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed #1f2937; }
+  ul.items li.bought span:first-child { text-decoration: line-through; color: #64748b; }
+  .group { font-size: 12px; color: #64748b; margin: 6px 0 2px; text-transform: uppercase; letter-spacing: .06em; }
+  .empty { color: #64748b; font-style: italic; }
+  #checks { list-style: none; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column-reverse; justify-content: flex-end; }
+  #checks li { padding: 3px 0; animation: in .25s ease-out; }
+  #checks li.pass::before { content: "\2714  "; color: #4ade80; }
+  #checks li.fail { color: #fca5a5; }
+  #checks li.fail::before { content: "\2718  "; color: #f87171; }
+  #banner { display: none; position: fixed; inset: auto 24px 24px 24px; padding: 18px; border-radius: 12px; font-size: 22px; font-weight: 700; text-align: center; }
+  #banner.ok { display: block; background: #14532d; color: #bbf7d0; border: 1px solid #22c55e; }
+  #banner.bad { display: block; background: #7f1d1d; color: #fecaca; border: 1px solid #ef4444; }
+  @keyframes in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Cartly</h1>
+    <span class="sub">End-to-end test: NestJS API + Firestore Emulator</span>
+    <span class="step" id="step"></span>
+  </header>
+  <div class="progress"><div id="bar"></div></div>
+  <section class="caption">
+    <h2 id="title">Starting...</h2>
+    <p id="text"></p>
+  </section>
+  <main>
+    <section class="panel">
+      <h3>HTTP requests (newest first)</h3>
+      <div id="log"></div>
+    </section>
+    <section class="right">
+      <div class="lists">
+        <div class="panel"><h3>Alice's list</h3><div id="list-alice"><p class="empty">Not loaded</p></div></div>
+        <div class="panel"><h3>Bob's list</h3><div id="list-bob"><p class="empty">Not loaded</p></div></div>
+      </div>
+      <div></div>
+      <div class="panel"><h3>Checks</h3><ul id="checks"></ul></div>
+    </section>
+  </main>
+  <div id="banner"></div>
+
+<script>
+  const API = new URLSearchParams(location.search).get('api') || 'http://localhost:3100/api';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  window.demo = {
+    setStep(index, total, title, text) {
+      $('step').textContent = `Step ${index} / ${total}`;
+      $('bar').style.width = `${(index / total) * 100}%`;
+      $('title').textContent = title;
+      $('text').textContent = text;
+    },
+
+    async call(method, path, user, body) {
+      const headers = { Accept: 'application/json' };
+      if (user) headers['X-User-ID'] = user;
+      if (body !== undefined) headers['Content-Type'] = 'application/json';
+      const res = await fetch(API + path, {
+        method, headers, body: body === undefined ? undefined : JSON.stringify(body),
+      });
+      const raw = await res.text();
+      let json = null;
+      try { json = raw ? JSON.parse(raw) : null; } catch { json = raw; }
+
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+      const hdr = user
+        ? `<span class="hdr">X-User-ID: ${esc(user)}</span>`
+        : '<span class="nohdr">(no X-User-ID header)</span>';
+      const reqBody = body === undefined ? '' : `\nbody: ${esc(JSON.stringify(body))}`;
+      const shown = json === null ? '(no content)' : JSON.stringify(json);
+      const resBody = shown.length > 150 ? shown.slice(0, 150) + '...' : shown;
+      entry.innerHTML =
+        `<div class="line"><span class="method">${method}</span><span class="path">/api${esc(path)}</span>` +
+        `<span class="status s${String(res.status)[0]}">${res.status}</span></div>` +
+        `<div class="meta">${hdr}${reqBody}\n-> ${esc(resBody)}</div>`;
+      $('log').prepend(entry);
+      return { status: res.status, body: json };
+    },
+
+    renderList(user, items) {
+      const el = $(`list-${user}`);
+      if (!items.length) { el.innerHTML = '<p class="empty">Empty list</p>'; return; }
+      const li = (i) =>
+        `<li class="${i.bought ? 'bought' : ''}"><span>${esc(i.name)}</span><span>x${i.quantity}</span></li>`;
+      const unbought = items.filter((i) => !i.bought);
+      const bought = items.filter((i) => i.bought);
+      el.innerHTML =
+        `<div class="group">Unbought</div><ul class="items">${unbought.map(li).join('') || '<li class="empty">none</li>'}</ul>` +
+        (bought.length ? `<div class="group">Bought</div><ul class="items">${bought.map(li).join('')}</ul>` : '');
+    },
+
+    check(ok, text) {
+      const item = document.createElement('li');
+      item.className = ok ? 'pass' : 'fail';
+      item.textContent = text;
+      $('checks').append(item);
+    },
+
+    finish(ok, text) {
+      const banner = $('banner');
+      banner.className = ok ? 'ok' : 'bad';
+      banner.textContent = text;
+    },
+  };
+</script>
+</body>
+</html>

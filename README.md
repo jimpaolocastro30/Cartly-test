@@ -85,6 +85,21 @@ npx firebase-tools emulators:exec --only firestore --project cartly-dev "npm run
                          # full HTTP + Firestore Emulator tests
 ```
 
+### Narrated end-to-end video
+
+`e2e-video/` records the same end-to-end scenarios as an MP4 with voice narration. Playwright drives a page that
+calls the real API, every response is checked, and Windows text-to-speech provides the narration.
+
+```bash
+cd e2e-video
+npm install
+npx playwright install chromium
+npm run record           # builds backend, starts the emulator, writes output/cartly-e2e.mp4
+```
+
+The script exits non-zero if any check fails, and still saves the video with the failure shown in red. It needs
+Windows for the narration and ffmpeg (from PATH, `FFMPEG_PATH`, or the bundled `ffmpeg-static`).
+
 ## 2. Mobile app
 
 The repo contains `lib/`, `test/` and `pubspec.yaml`. Generate the platform folders once:

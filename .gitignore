@@ -11,6 +11,9 @@ backend/coverage/
 *.tsbuildinfo
 npm-debug.log*
 
+# Narrated e2e recordings
+e2e-video/output/
+
 # Firebase
 .firebase/
 firebase-debug.log

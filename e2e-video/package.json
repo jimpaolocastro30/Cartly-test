@@ -1,0 +1,15 @@
+{
+  "name": "cartly-e2e-video",
+  "version": "1.0.0",
+  "description": "Records a narrated end-to-end test of the Cartly API against the Firestore Emulator",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "record": "npm --prefix ../backend run build && cd ../backend && npx -y firebase-tools@13 emulators:exec --only firestore --project cartly-dev \"node ../e2e-video/record.js\"",
+    "record:no-emulator": "node record.js"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0",
+    "playwright": "^1.48.2"
+  }
+}
