@@ -85,24 +85,32 @@ npx firebase-tools emulators:exec --only firestore --project cartly-dev "npm run
                          # full HTTP + Firestore Emulator tests
 ```
 
-### Narrated end-to-end video
+### Narrated end-to-end videos
 
-`e2e-video/` records the same end-to-end scenarios as an MP4 with voice narration. Playwright drives a page that
-calls the real API, every response is checked, and Windows text-to-speech provides the narration.
+`e2e-video/` records two end-to-end tests as MP4s with voice narration (Windows text-to-speech). Both use the real
+backend and the Firestore Emulator, and every step is checked.
 
 ```bash
 cd e2e-video
 npm install
 npx playwright install chromium
-npm run record           # builds backend, starts the emulator, writes output/cartly-e2e.mp4
+npm run record           # API test        -> output/cartly-e2e.mp4
+npm run record:mobile    # mobile app test -> output/cartly-mobile-e2e.mp4
 ```
 
-The script exits non-zero if any check fails, and still saves the video with the failure shown in red. It needs
+- **API test:** a page sends each request and shows it, along with each user's list and the checks.
+- **Mobile test:** the real Flutter app is built for the web and runs inside a phone frame. Playwright taps and types
+  through Flutter's accessibility tree with real mouse and keyboard input. Each step checks what the app shows and
+  what the API stored. It covers the empty, loading and error-with-Retry states, validation, add, tick off, clear
+  bought, delete, privacy, and an item that was deleted from another device. `record:mobile` needs Flutter. If it
+  isn't on PATH, set `FLUTTER_BIN`, for example `D:\tools\flutter\bin\flutter.bat`.
+
+The scripts exit non-zero if any check fails, and still save the video with the failure shown in red. They need
 Windows for the narration and ffmpeg (from PATH, `FFMPEG_PATH`, or the bundled `ffmpeg-static`).
 
 ## 2. Mobile app
 
-The repo contains `lib/`, `test/` and `pubspec.yaml`. Generate the platform folders once:
+The repo contains `lib/`, `test/`, `web/` and `pubspec.yaml`. Generate the Android and iOS folders once:
 
 ```bash
 cd mobile

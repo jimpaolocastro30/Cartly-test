@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cartly - Mobile end-to-end test</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; height: 100vh; overflow: hidden;
+    font: 15px/1.45 "Segoe UI", system-ui, sans-serif;
+    background: radial-gradient(circle at 75% 40%, #1e293b, #0b1120 70%); color: #e2e8f0;
+    display: grid; grid-template-columns: 1fr 420px;
+  }
+  .side { padding: 28px 8px 24px 40px; display: flex; flex-direction: column; min-height: 0; }
+  .brand { display: flex; align-items: baseline; gap: 12px; }
+  .brand h1 { margin: 0; font-size: 26px; color: #4ade80; }
+  .brand span { color: #94a3b8; }
+  .step { margin-top: 18px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+  .progress { height: 4px; background: #1f2937; border-radius: 2px; margin-top: 6px; }
+  .progress > div { height: 100%; width: 0; background: #4ade80; border-radius: 2px; transition: width .4s; }
+  h2 { margin: 18px 0 6px; font-size: 30px; }
+  .caption { margin: 0; color: #cbd5e1; font-size: 18px; min-height: 80px; }
+  .panel { margin-top: 18px; background: rgba(17, 24, 39, .85); border: 1px solid #1f2937; border-radius: 12px; padding: 12px 16px; flex: 1; min-height: 0; overflow: hidden; }
+  .panel h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; }
+  #checks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column-reverse; justify-content: flex-end; }
+  #checks li { padding: 3px 0; animation: in .25s ease-out; }
+  #checks li.pass::before { content: "\2714  "; color: #4ade80; }
+  #checks li.fail { color: #fca5a5; }
+  #checks li.fail::before { content: "\2718  "; color: #f87171; }
+  .stack { margin-top: 10px; color: #64748b; font-size: 13px; }
+
+  .device { display: flex; align-items: center; justify-content: center; }
+  .phone {
+    position: relative; width: 352px; height: 696px; border-radius: 46px; padding: 14px;
+    background: #0a0a0a; box-shadow: 0 0 0 2px #334155, 0 30px 60px rgba(0,0,0,.6);
+  }
+  .phone::before {
+    content: ""; position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
+    width: 90px; height: 22px; border-radius: 12px; background: #0a0a0a; z-index: 3;
+  }
+  .screen { position: relative; width: 324px; height: 668px; border-radius: 34px; overflow: hidden; background: #fff; }
+  .statusbar { height: 36px; background: #f1f5ef; display: flex; justify-content: space-between; align-items: center; padding: 6px 26px 0; font: 600 13px "Segoe UI"; color: #111; }
+  iframe { display: block; width: 324px; height: 632px; border: 0; }
+  .tap {
+    position: fixed; width: 44px; height: 44px; margin: -22px 0 0 -22px; border-radius: 50%;
+    background: rgba(74, 222, 128, .45); border: 2px solid #22c55e; pointer-events: none; z-index: 10;
+    animation: tap .6s ease-out forwards;
+  }
+  #banner { display: none; margin-top: 14px; padding: 14px; border-radius: 12px; font-size: 20px; font-weight: 700; text-align: center; }
+  #banner.ok { display: block; background: #14532d; color: #bbf7d0; border: 1px solid #22c55e; }
+  #banner.bad { display: block; background: #7f1d1d; color: #fecaca; border: 1px solid #ef4444; }
+  @keyframes tap { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.3); opacity: 0; } }
+  @keyframes in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+  <section class="side">
+    <div class="brand"><h1>Cartly</h1><span>Mobile end-to-end test</span></div>
+    <div class="stack">Flutter app &rarr; NestJS API &rarr; Firestore Emulator</div>
+    <div class="step" id="step">&nbsp;</div>
+    <div class="progress"><div id="bar"></div></div>
+    <h2 id="title">Starting...</h2>
+    <p class="caption" id="text"></p>
+    <div class="panel"><h3>Checks</h3><ul id="checks"></ul></div>
+    <div id="banner"></div>
+  </section>
+  <section class="device">
+    <div class="phone">
+      <div class="screen">
+        <div class="statusbar"><span id="clock">9:41</span><span>5G &#9646;&#9646;&#9646;</span></div>
+        <iframe id="app" title="Cartly app"></iframe>
+      </div>
+    </div>
+  </section>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  $('app').src = new URLSearchParams(location.search).get('app') || '/app/';
+
+  window.demo = {
+    setStep(index, total, title, text) {
+      $('step').textContent = `Step ${index} / ${total}`;
+      $('bar').style.width = `${(index / total) * 100}%`;
+      $('title').textContent = title;
+      $('text').textContent = text;
+    },
+    tap(x, y) {
+      const dot = document.createElement('div');
+      dot.className = 'tap';
+      dot.style.left = `${x}px`;
+      dot.style.top = `${y}px`;
+      document.body.append(dot);
+      setTimeout(() => dot.remove(), 700);
+    },
+    check(ok, text) {
+      const item = document.createElement('li');
+      item.className = ok ? 'pass' : 'fail';
+      item.textContent = text;
+      $('checks').append(item);
+    },
+    finish(ok, text) {
+      $('banner').className = ok ? 'ok' : 'bad';
+      $('banner').textContent = text;
+    },
+  };
+</script>
+</body>
+</html>

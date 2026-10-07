@@ -6,7 +6,8 @@
   "license": "UNLICENSED",
   "scripts": {
     "record": "npm --prefix ../backend run build && cd ../backend && npx -y firebase-tools@13 emulators:exec --only firestore --project cartly-dev \"node ../e2e-video/record.js\"",
-    "record:no-emulator": "node record.js"
+    "build:mobile-web": "node build-mobile-web.js",
+    "record:mobile": "npm --prefix ../backend run build && node build-mobile-web.js && cd ../backend && npx -y firebase-tools@13 emulators:exec --only firestore --project cartly-dev \"node ../e2e-video/record-mobile.js\""
   },
   "dependencies": {
     "ffmpeg-static": "^5.2.0",
