@@ -1,0 +1,33 @@
+# Environment / secrets
+.env
+*.env.local
+**/service-account*.json
+**/*-firebase-adminsdk-*.json
+
+# Node / NestJS
+node_modules/
+backend/dist/
+backend/coverage/
+*.tsbuildinfo
+npm-debug.log*
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Flutter / Dart
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/pubspec.lock.bak
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
